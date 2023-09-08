@@ -10,15 +10,14 @@
   }
 
   async function createOverlay(){
-    const webview = new WebviewWindow('overlay', {
+    const webview = new WebviewWindow('theUniqueLabel', {
       url: 'overlay.html',
       transparent: true,
       height: 700,
       width: 700,
       resizable: true,
-      alwaysOnTop: true,
       decorations: false,
-      title: "Select Overlay Area",
+      alwaysOnTop: true,
     });
   }
 </script>

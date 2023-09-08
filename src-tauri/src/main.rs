@@ -20,7 +20,8 @@ async fn open_docs(handle: tauri::AppHandle) {
     .decorations(false)
     .build().unwrap();
 
-    docs_window.set_ignore_cursor_events(true);
+    //.decorations(false)
+    //docs_window.set_ignore_cursor_events(true);
     docs_window.set_always_on_top(true);
 
     // create transparent window
