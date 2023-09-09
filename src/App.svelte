@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Greet from './lib/Greet.svelte'
+  import SelectOverlay from './lib/SelectOverlay.svelte'
   // make window not transparent
   import { appWindow } from "@tauri-apps/api/window";
   appWindow.setDecorations(true);
@@ -11,7 +11,7 @@
   </p>
 
   <div class="row">
-    <Greet />
+    <SelectOverlay />
   </div>
 
 

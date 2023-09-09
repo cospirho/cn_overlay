@@ -4,11 +4,6 @@
   let name = "";
   let greetMsg = ""
 
-  async function greet(){
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    greetMsg = await invoke("greet", { name });
-  }
-
   async function createOverlay(){
     const webview = new WebviewWindow('overlay', {
       url: 'overlay.html',
@@ -24,11 +19,6 @@
 </script>
 
 <div>
-  <form class="row" on:submit|preventDefault={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-
   <button type="button" on:click={createOverlay}>Select Overlay Area</button>
   <p>{greetMsg}</p>
 </div>
