@@ -2,7 +2,6 @@
   import { invoke } from "@tauri-apps/api/tauri"
   import { LogicalSize, WebviewWindow } from '@tauri-apps/api/window'
   let name = "";
-  let greetMsg = ""
 
   async function createOverlay(){
     const webview = new WebviewWindow('overlay', {
@@ -19,6 +18,5 @@
 </script>
 
 <div>
-  <button type="button" on:click={createOverlay}>Select Overlay Area</button>
-  <p>{greetMsg}</p>
+  <button type="button" on:click={createOverlay}>Select Overlay Area...</button>
 </div>

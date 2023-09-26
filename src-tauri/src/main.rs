@@ -5,7 +5,8 @@ use win_screenshot::prelude::*;
 use image::RgbaImage;
 use windows::Win32::UI::WindowsAndMessaging::{WindowFromPoint, GetCursorPos, GetWindowRect, GetWindowTextW};
 use windows::Win32::Foundation::{HWND, POINT};
-
+use reqwest::blocking::Client;
+use std::fs::File;
 
 fn get_mouse_pos() -> (i32, i32) {
     let mut point = POINT { x: 0, y: 0 };
@@ -40,10 +41,23 @@ fn get_window() -> (isize, String) {
     (window_id, window_text)
 }
 
+//ocr server is running on port 7272
+fn get_ocr_data() -> Result<String, Box<dyn std::error::Error>> {
+    let file = File::open("../screenshot.jpg")?;
+
+    let client = Client::new();
+    let res = client.post("http://localhost:7272/ocr")
+        .header("Content-Type", "multipart/form-data")
+        .body(file)
+        .send()?;
+    let text = res.text()?;
+    Ok(text)
+}
+
 #[tauri::command]
 fn screenshot(window_id: isize) -> () {
     let using = Using::PrintWindow;
-    //todo make faster
+    //TODO make faster
     //https://stackoverflow.com/questions/43595289/screenshot-with-bitblt-results-in-black-image-on-windows-10
     //let using = Using::BitBlt;
     let area = Area::ClientOnly;
@@ -53,8 +67,12 @@ fn screenshot(window_id: isize) -> () {
 
     // convert to image and save
     let img = RgbaImage::from_raw(buf.width, buf.height, buf.pixels).unwrap();
+    
+    //for debugging, we also save the screenshot
     img.save("../screenshot.jpg").unwrap();
     println!("Saved screenshot.jpg");
+    let ocr_result = get_ocr_data();
+    println!("OCR result: {:?}", ocr_result);
 }
 
 fn main() {
