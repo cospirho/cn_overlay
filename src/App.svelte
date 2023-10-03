@@ -7,14 +7,11 @@
 
 <main class="container">
   <p>
-    
   </p>
 
   <div class="row">
     <SelectOverlay />
   </div>
-
-
 </main>
 
 <style>

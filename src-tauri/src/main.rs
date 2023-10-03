@@ -3,7 +3,7 @@
 
 use win_screenshot::prelude::*;
 use image::RgbaImage;
-use windows::Win32::UI::WindowsAndMessaging::{WindowFromPoint, GetCursorPos, GetWindowRect, GetWindowTextW};
+use windows::Win32::UI::WindowsAndMessaging::{WindowFromPoint, GetCursorPos, GetWindowRect, GetWindowTextW, GetDesktopWindow};
 use windows::Win32::Foundation::{HWND, POINT};
 use reqwest::blocking::Client;
 use std::fs::File;
@@ -34,11 +34,16 @@ fn get_window_text(window_id: isize) -> String {
 }
 
 #[tauri::command]
-fn get_window() -> (isize, String) {
+fn get_window() -> (isize, String, i32, i32, i32, i32) {
     let (x, y) = get_mouse_pos();
     let window_id = get_window_id(x, y);
     let window_text = get_window_text(window_id);
-    (window_id, window_text)
+    let window_rect = unsafe {
+        let mut rect = std::mem::zeroed();
+        GetWindowRect(HWND(window_id as isize), &mut rect);
+        rect
+    };
+    (window_id, window_text, window_rect.left, window_rect.top, window_rect.right, window_rect.bottom)
 }
 
 //ocr server is running on port 7272
@@ -55,24 +60,33 @@ fn get_ocr_data() -> Result<String, Box<dyn std::error::Error>> {
 }
 
 #[tauri::command]
-fn screenshot(window_id: isize) -> () {
+//crop_wh is a Option<[i32; 2]>
+fn screenshot(window_id: isize, crop_wh: Option<[i32; 2]>, crop_xy: Option<[i32; 2]>) -> String {
     let using = Using::PrintWindow;
-    //TODO make faster
+    //TODO make faster? We want the window since the overlay will cover the actual text
     //https://stackoverflow.com/questions/43595289/screenshot-with-bitblt-results-in-black-image-on-windows-10
     //let using = Using::BitBlt;
+    println!("crop_wh: {:?}", crop_wh);
     let area = Area::ClientOnly;
-    let crop_xy = None;
-    let crop_wh = None;
+    //crop_wh is the width and height OF the screenshot
+    //crop_xy is the x and y position of the screenshot
     let buf = capture_window_ex(window_id, using, area, crop_xy, crop_wh).unwrap();
 
     // convert to image and save
     let img = RgbaImage::from_raw(buf.width, buf.height, buf.pixels).unwrap();
     
     //for debugging, we also save the screenshot
+    println!("Saving screenshot...");
     img.save("../screenshot.jpg").unwrap();
     println!("Saved screenshot.jpg");
     let ocr_result = get_ocr_data();
     println!("OCR result: {:?}", ocr_result);
+    //handle error
+    let ocr_result = match ocr_result {
+        Ok(text) => text,
+        Err(e) => format!("Error: {}", e)
+    };
+    ocr_result
 }
 
 fn main() {

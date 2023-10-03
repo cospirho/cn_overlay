@@ -6,6 +6,14 @@
   let windowName:String = "No process selected";
   let windowId: number = 0;
   let windowInterval: number;
+  let overlay_wh: [number, number] = [0, 0];
+  let overlay_xy: [number, number] = [0, 0];
+
+  let windowLeft: number;
+  let windowTop: number;
+  let windowRight: number;
+  let windowBottom: number;
+    
 
   function setOverlay(): void {
     appWindow.setDecorations(true);
@@ -24,6 +32,15 @@
     document.body.style.backgroundColor = "rgba(238, 238, 244, 0)";
     getPosition().then((position) => {
       console.log(position);
+      overlay_xy = [position.x - windowLeft, position.y - windowTop];
+      console.log(overlay_xy);
+    });
+    console.log(overlay_xy);
+    appWindow.innerSize().then((size) => {
+      console.log(size);
+      let width = size.width;
+      let height = size.height;
+      overlay_wh = [width, height];
     });
   }
 
@@ -35,13 +52,14 @@
   }
 
   async function takeScreenshot(){
-    let result = await invoke("screenshot", {windowId: windowId});
+    let result = await invoke("screenshot", {windowId: windowId, cropWh: overlay_wh, cropXy: overlay_xy});
     console.log("took screenshitjkjA" + result);
   }
 
   async function getMouseWindow(): Promise<void> {
-    let result: [number, String] = await invoke("get_window");
-    [windowId, windowName] = result;
+    let result: [number, String, number, number, number, number] = await invoke("get_window");
+    [windowId, windowName, windowLeft, windowTop, windowRight, windowBottom] = result;
+    console.log(result);
     if(windowName === ""){
       windowName = "No title - " + windowId.toString();
     }
