@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/tauri"
   import { LogicalSize, appWindow } from "@tauri-apps/api/window";
+  //import { Text } from "./lib/Text.svelte";
   type State = "set_overlay" | "select_process" | "run_overlay"
   let state: State = "select_process";
   let windowName:String = "No process selected";
@@ -29,7 +30,7 @@
   function confirmOverlay(): void {
     appWindow.setDecorations(false);
     state = "run_overlay";
-    document.body.style.backgroundColor = "rgba(238, 238, 244, 0)";
+    document.body.style.backgroundColor = "rgba(238, 238, 244, 0.03)";
     getPosition().then((position) => {
       console.log(position);
       overlay_xy = [position.x - windowLeft, position.y - windowTop];
@@ -96,7 +97,7 @@
       <button type="button" class="confirm-btn" on:click={confirmOverlay}>Confirm</button>
     </div>
   {:else if state === "run_overlay"}
-    <h2><span id="title">Overlay is running</span></h2>
+    <h2><span id="title">Overlay is running!</span></h2>
     <div class = "row">
       <button type="button" class="confirm-btn" on:click={setOverlay}>Close</button>
       <button type="button" class="confirm-btn" on:click={takeScreenshot}>Take Screenshot</button>
