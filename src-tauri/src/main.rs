@@ -1,12 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod dictionary;
+use dictionary::{parse_dictionary, lookup_character, DictionaryEntry};
+
 use win_screenshot::prelude::*;
 use image::RgbaImage;
 use windows::Win32::UI::WindowsAndMessaging::{WindowFromPoint, GetCursorPos, GetWindowRect, GetWindowTextW, GetDesktopWindow};
 use windows::Win32::Foundation::{HWND, POINT};
 use reqwest::blocking::Client;
 use std::fs::File;
+
 
 fn get_mouse_pos() -> (i32, i32) {
     let mut point = POINT { x: 0, y: 0 };
@@ -90,6 +94,19 @@ fn screenshot(window_id: isize, crop_wh: Option<[i32; 2]>, crop_xy: Option<[i32;
 }
 
 fn main() {
+    println!("Parsing dictionary...");
+    let dictionary = parse_dictionary();
+    println!("Dictionary parsed");
+    println!("Looking up a character...");
+    let result = dictionary.get("你");
+    let not_found = "Not found".to_string();
+    let (pinyin, definitions) = match result {
+        Some(entry) => (&entry.pinyin, &entry.definitions),
+        None => {
+            (&not_found, &not_found)
+        }
+    };
+    println!("searched for character: {}, pinyin: {}, definitions: {}", "你", pinyin, definitions);
     tauri::Builder::default()
         .on_window_event(|e| {
             if let tauri::WindowEvent::Resized(_) = e.event() {
