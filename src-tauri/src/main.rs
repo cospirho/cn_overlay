@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod dictionary;
-use dictionary::{parse_dictionary, lookup_character, DictionaryEntry};
+use dictionary::{parse_dictionary, DictionaryEntry};
 
 use win_screenshot::prelude::*;
 use image::RgbaImage;
@@ -93,6 +93,25 @@ fn screenshot(window_id: isize, crop_wh: Option<[i32; 2]>, crop_xy: Option<[i32;
     ocr_result
 }
 
+// fuck it TODO make more efficient
+pub fn substrings(s: &str) -> Vec<String> {
+    //todo what chars are actually possible?
+    //let word_ending = vec!['!', '?', '。', '！', '？', '，', '、', ' ', '.', ',', '_'];
+    let mut result = Vec::new();
+    let chars: Vec<char> = s.chars().collect();
+    let maxlen = 4;
+
+    for i in 0..chars.len() {
+        let mut subsequence = String::new();
+        for j in i..i + maxlen {
+            if j < chars.len() {
+                subsequence.push(chars[j]);
+                result.push(subsequence.clone());
+            }
+        }
+    }
+    result
+}
 fn main() {
     println!("Parsing dictionary...");
     let dictionary = parse_dictionary();
@@ -100,6 +119,31 @@ fn main() {
     println!("Looking up a character...");
     let result = dictionary.get("你");
     let not_found = "Not found".to_string();
+    
+    let sentence = "找到了!白露大人!_在这! 他们互相倾慕。请给我一杯咖啡。我想跟他说话。";
+
+    let substrings = substrings(sentence);
+    // lookup each substring in the dictionary
+    for substring in substrings {
+        let result = dictionary.get(&substring);
+        let (pinyin, definitions) = match result {
+            Some(entry) => (&entry.pinyin, &entry.definitions),
+            None => {
+                (&not_found, &not_found)
+            }
+        };
+        println!("searched for character: {}, pinyin: {}, definitions: {}", substring, pinyin, definitions);
+    } 
+
+
+
+    let mut sentence_result = String::new();
+    let mut word_end = 0;
+
+    let mut word_start = 0;
+
+    println!("sentence result: {}", sentence_result);
+
     let (pinyin, definitions) = match result {
         Some(entry) => (&entry.pinyin, &entry.definitions),
         None => {
