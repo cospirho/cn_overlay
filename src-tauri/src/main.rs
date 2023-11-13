@@ -123,18 +123,25 @@ fn main() {
     let sentence = "找到了!白露大人!_在这! 他们互相倾慕。请给我一杯咖啡。我想跟他说话。";
 
     let substrings = substrings(sentence);
+    let mut found_words = Vec::new();
     // lookup each substring in the dictionary
-    for substring in substrings {
-        let result = dictionary.get(&substring);
+    for (i, substring) in substrings.iter().enumerate() {
+        let result = dictionary.get(substring);
         let (pinyin, definitions) = match result {
             Some(entry) => (&entry.pinyin, &entry.definitions),
             None => {
                 (&not_found, &not_found)
             }
         };
+        if definitions != &not_found {
+            found_words.push((i, pinyin, definitions, substring));
+        }
         println!("searched for character: {}, pinyin: {}, definitions: {}", substring, pinyin, definitions);
     } 
 
+    for (i, pinyin, definitions, substring) in found_words {
+        println!("found word: {}, pinyin: {}, definitions: {}", substring, pinyin, definitions);
+    }
 
 
     let mut sentence_result = String::new();
