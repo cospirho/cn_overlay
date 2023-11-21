@@ -112,7 +112,7 @@ fn sample_converter() {
     println!("{}", result1);
     let result2 = converter.convert("lv4");
     println!("{}", result2);
-    let result3 = converter.convert("WO3 HEN3 XI3HUAN QUIZLET!");
+    let result3 = converter.convert("WO3 HEN3 XI3HUAN QUIZLET!"); // I do <3
     println!("{}", result3);
 }
 

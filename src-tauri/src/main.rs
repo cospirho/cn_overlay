@@ -10,7 +10,9 @@ use windows::Win32::UI::WindowsAndMessaging::{WindowFromPoint, GetCursorPos, Get
 use windows::Win32::Foundation::{HWND, POINT};
 use reqwest::blocking::Client;
 use std::fs::File;
+use std::collections::HashMap;
 
+struct DictionaryInstance(HashMap<String, DictionaryEntry>);
 
 fn get_mouse_pos() -> (i32, i32) {
     let mut point = POINT { x: 0, y: 0 };
@@ -112,17 +114,11 @@ pub fn substrings(s: &str) -> Vec<String> {
     }
     result
 }
-fn main() {
-    println!("Parsing dictionary...");
-    let dictionary = parse_dictionary();
-    println!("Dictionary parsed");
-    println!("Looking up a character...");
-    let result = dictionary.get("你");
-    let not_found = "Not found".to_string();
-    
-    let sentence = "找到了!白露大人!_在这! 他们互相倾慕。请给我一杯咖啡。我想跟他说话。";
 
+
+pub fn get_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&str) -> Vec<(usize, String, String, String)> {
     let substrings = substrings(sentence);
+    let not_found = "Not found".to_string();
     let mut found_words = Vec::new();
     // lookup each substring in the dictionary
     for (i, substring) in substrings.iter().enumerate() {
@@ -134,37 +130,33 @@ fn main() {
             }
         };
         if definitions != &not_found {
-            found_words.push((i, pinyin, definitions, substring));
+            found_words.push((i, pinyin.clone(), definitions.clone(), substring.clone()));
         }
-        println!("searched for character: {}, pinyin: {}, definitions: {}", substring, pinyin, definitions);
     } 
+    found_words
+}
 
-    for (i, pinyin, definitions, substring) in found_words {
-        println!("found word: {}, pinyin: {}, definitions: {}", substring, pinyin, definitions);
-    }
+#[tauri::command]
+fn lookup_sentence(state: tauri::State<DictionaryInstance>, sentence:&str) -> Vec<(usize, String, String, String)> {
+    let found_words = get_definitions(&state.0, sentence);
+    found_words
+}
 
+fn main() {
+    println!("Parsing dictionary...");
+    let dictionary = parse_dictionary();
+    println!("Dictionary parsed");
+    
+    let sentence = "找到了!白露大人!_在这! 他们互相倾慕。请给我一杯咖啡。我想跟他说话。";
 
-    let mut sentence_result = String::new();
-    let mut word_end = 0;
-
-    let mut word_start = 0;
-
-    println!("sentence result: {}", sentence_result);
-
-    let (pinyin, definitions) = match result {
-        Some(entry) => (&entry.pinyin, &entry.definitions),
-        None => {
-            (&not_found, &not_found)
-        }
-    };
-    println!("searched for character: {}, pinyin: {}, definitions: {}", "你", pinyin, definitions);
     tauri::Builder::default()
+        .manage(DictionaryInstance(dictionary))
         .on_window_event(|e| {
             if let tauri::WindowEvent::Resized(_) = e.event() {
                 std::thread::sleep(std::time::Duration::from_nanos(1));
             }
         })
-        .invoke_handler(tauri::generate_handler![screenshot, get_window])
+        .invoke_handler(tauri::generate_handler![screenshot, get_window, lookup_sentence])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

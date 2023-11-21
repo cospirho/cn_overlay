@@ -7,7 +7,6 @@ pub struct DictionaryEntry {
     pub definitions: String,
 }
 
-//TODO maybe just parse this once and save it to a file as something easier/faster to read
 pub fn parse_dictionary() -> HashMap<String, DictionaryEntry> {
     let mut dictionary = HashMap::new();
     let file = File::open("./dict/dictionary.tsv").expect("Dictionary file not found");
