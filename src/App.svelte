@@ -10,7 +10,7 @@
   <p>
   </p>
 
-  <div class="row">
+  <div class="">
     <Text/>
     <SelectOverlay />
   </div>

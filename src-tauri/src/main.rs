@@ -142,12 +142,24 @@ fn lookup_sentence(state: tauri::State<DictionaryInstance>, sentence:&str) -> Ve
     found_words
 }
 
+// users can highlight a word to look it up
+#[tauri::command]
+fn lookup_word(state: tauri::State<DictionaryInstance>, word:&str) -> (String, String) {
+    let not_found = "Not found".to_string();
+    let result = &state.0.get(word);
+        let (pinyin, definitions) = match result {
+            Some(entry) => (&entry.pinyin, &entry.definitions),
+            None => {
+                (&not_found, &not_found)
+            }
+        };
+    (pinyin.clone(), definitions.clone())
+}
+
 fn main() {
     println!("Parsing dictionary...");
     let dictionary = parse_dictionary();
     println!("Dictionary parsed");
-    
-    let sentence = "找到了!白露大人!_在这! 他们互相倾慕。请给我一杯咖啡。我想跟他说话。";
 
     tauri::Builder::default()
         .manage(DictionaryInstance(dictionary))
@@ -156,7 +168,7 @@ fn main() {
                 std::thread::sleep(std::time::Duration::from_nanos(1));
             }
         })
-        .invoke_handler(tauri::generate_handler![screenshot, get_window, lookup_sentence])
+        .invoke_handler(tauri::generate_handler![screenshot, get_window, lookup_sentence, lookup_word])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
