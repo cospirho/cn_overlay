@@ -12,7 +12,18 @@ use reqwest::blocking::Client;
 use std::fs::File;
 use std::collections::HashMap;
 
+const SUBSTR_LEN: usize = 4;
+
 struct DictionaryInstance(HashMap<String, DictionaryEntry>);
+
+#[derive(Clone)]
+pub struct Definition {
+    pinyin: String,
+    definition: String,
+    characters: String,
+    substring_num: usize,
+    num_characters: usize
+}
 
 fn get_mouse_pos() -> (i32, i32) {
     let mut point = POINT { x: 0, y: 0 };
@@ -95,33 +106,32 @@ fn screenshot(window_id: isize, crop_wh: Option<[i32; 2]>, crop_xy: Option<[i32;
     ocr_result
 }
 
-// fuck it TODO make more efficient
-pub fn substrings(s: &str) -> Vec<String> {
-    //todo what chars are actually possible?
-    //let word_ending = vec!['!', '?', '。', '！', '？', '，', '、', ' ', '.', ',', '_'];
+// TODO make more efficient
+pub fn substrings(s: &str) -> Vec<(String, usize)> {
     let mut result = Vec::new();
     let chars: Vec<char> = s.chars().collect();
-    let maxlen = 4;
+    let maxlen = SUBSTR_LEN;
 
     for i in 0..chars.len() {
         let mut subsequence = String::new();
         for j in i..i + maxlen {
             if j < chars.len() {
                 subsequence.push(chars[j]);
-                result.push(subsequence.clone());
+                result.push((subsequence.clone(), j-i+1));
+                println!("{} {}", subsequence, j-i+1)
             }
         }
     }
     result
 }
 
-
-pub fn get_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&str) -> Vec<(usize, String, String, String)> {
+pub fn get_all_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&str) -> Vec<Definition> {
     let substrings = substrings(sentence);
     let not_found = "Not found".to_string();
-    let mut found_words = Vec::new();
+    let mut found_words: Vec<Definition> = Vec::new();
     // lookup each substring in the dictionary
-    for (i, substring) in substrings.iter().enumerate() {
+    for (i, substring_data) in substrings.iter().enumerate() {
+        let substring = &substring_data.0;
         let result = dictionary.get(substring);
         let (pinyin, definitions) = match result {
             Some(entry) => (&entry.pinyin, &entry.definitions),
@@ -130,16 +140,66 @@ pub fn get_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&
             }
         };
         if definitions != &not_found {
-            found_words.push((i, pinyin.clone(), definitions.clone(), substring.clone()));
+            found_words.push(Definition {
+                pinyin: pinyin.clone(),
+                definition: definitions.clone(),
+                characters: substring.clone(),
+                substring_num: i,
+                num_characters: substring_data.1
+            });
         }
     } 
     found_words
 }
 
+//just clone everywhere for now
+//filters get_all_definitions to only return the longest word at each start index sentence[0]/SUBSTR_LEN
+pub fn get_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&str) -> Vec<Definition> {
+    let mut all_definitions = get_all_definitions(dictionary, sentence);
+    //print all definitions for debugging
+    for definition in &all_definitions {
+        println!("{} {} {} {}", definition.pinyin, definition.definition, definition.characters, definition.substring_num);
+    }
+    let mut filtered_definitions: Vec<Definition> = Vec::new();
+    let mut sentence_index = 0;
+    let mut last_found_index = 1024;
+    let mut filtered_size = 0;
+
+    for definition in &all_definitions {
+        sentence_index = definition.substring_num / SUBSTR_LEN;
+        println!("char: {}, sentence index: {}, last_found: {}, substring_num: {}", definition.characters, sentence_index, last_found_index, definition.substring_num);
+        // if the current word is within the length of the last found word, skip it
+        // TODO cleanup 
+        if filtered_size > 0 && sentence_index != filtered_definitions[filtered_size-1].substring_num/SUBSTR_LEN && sentence_index <= last_found_index + filtered_definitions[filtered_size-1].num_characters - 1  {
+            println!("Skipping {} , {} < {} ({})", definition.characters, sentence_index, last_found_index + filtered_definitions[filtered_size-1].num_characters-1, filtered_definitions[filtered_size-1].characters);
+            continue;
+        }
+        if sentence_index != last_found_index {
+            filtered_definitions.push(definition.clone());
+            println!("Adding {} to filtered definitions", definition.characters);
+            filtered_size += 1;
+            last_found_index = sentence_index;
+        } else {
+            println!("Replacing {} with {}", filtered_definitions[filtered_size-1].characters, definition.characters);
+            filtered_definitions[filtered_size-1] = definition.clone();
+            //print filtered definitions debug
+        }
+    }
+    //print filtered definitions debug
+    for definition in &filtered_definitions {
+        println!("{} {} {} {}", definition.pinyin, definition.definition, definition.characters, definition.substring_num);
+    }
+    filtered_definitions
+}
+
 #[tauri::command]
-fn lookup_sentence(state: tauri::State<DictionaryInstance>, sentence:&str) -> Vec<(usize, String, String, String)> {
+fn lookup_sentence(state: tauri::State<DictionaryInstance>, sentence:&str) -> Vec<(usize, String, String, String, usize)> {
     let found_words = get_definitions(&state.0, sentence);
-    found_words
+    let mut result: Vec<(usize, String, String, String, usize)> = Vec::new();
+    for definition in found_words {
+        result.push((definition.substring_num, definition.pinyin, definition.definition, definition.characters, definition.num_characters));
+    }
+    result
 }
 
 // users can highlight a word to look it up
