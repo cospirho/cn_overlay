@@ -21,8 +21,15 @@ pub struct Definition {
     pinyin: String,
     definition: String,
     characters: String,
-    substring_num: usize,
-    num_characters: usize
+    sentence_index: usize,
+    length: usize
+}
+
+#[derive(Clone)]
+pub struct Substring {
+    string: String,
+    length: usize,
+    sentence_index: usize
 }
 
 fn get_mouse_pos() -> (i32, i32) {
@@ -107,7 +114,7 @@ fn screenshot(window_id: isize, crop_wh: Option<[i32; 2]>, crop_xy: Option<[i32;
 }
 
 // TODO make more efficient
-pub fn substrings(s: &str) -> Vec<(String, usize)> {
+pub fn substrings(s: &str) -> Vec<Substring> {
     let mut result = Vec::new();
     let chars: Vec<char> = s.chars().collect();
     let maxlen = SUBSTR_LEN;
@@ -117,8 +124,12 @@ pub fn substrings(s: &str) -> Vec<(String, usize)> {
         for j in i..i + maxlen {
             if j < chars.len() {
                 subsequence.push(chars[j]);
-                result.push((subsequence.clone(), j-i+1));
-                println!("{} {}", subsequence, j-i+1)
+                //result.push((subsequence.clone(), j-i+1, i));
+                result.push(Substring {
+                    string: subsequence.clone(),
+                    length: j-i+1,
+                    sentence_index: i
+                });
             }
         }
     }
@@ -131,7 +142,7 @@ pub fn get_all_definitions(dictionary: &HashMap<String, DictionaryEntry>, senten
     let mut found_words: Vec<Definition> = Vec::new();
     // lookup each substring in the dictionary
     for (i, substring_data) in substrings.iter().enumerate() {
-        let substring = &substring_data.0;
+        let substring = &substring_data.string;
         let result = dictionary.get(substring);
         let (pinyin, definitions) = match result {
             Some(entry) => (&entry.pinyin, &entry.definitions),
@@ -144,8 +155,8 @@ pub fn get_all_definitions(dictionary: &HashMap<String, DictionaryEntry>, senten
                 pinyin: pinyin.clone(),
                 definition: definitions.clone(),
                 characters: substring.clone(),
-                substring_num: i,
-                num_characters: substring_data.1
+                sentence_index: substring_data.sentence_index,
+                length: substring_data.length
             });
         }
     } 
@@ -156,38 +167,23 @@ pub fn get_all_definitions(dictionary: &HashMap<String, DictionaryEntry>, senten
 //filters get_all_definitions to only return the longest word at each start index sentence[0]/SUBSTR_LEN
 pub fn get_definitions(dictionary: &HashMap<String, DictionaryEntry>, sentence:&str) -> Vec<Definition> {
     let mut all_definitions = get_all_definitions(dictionary, sentence);
-    //print all definitions for debugging
-    for definition in &all_definitions {
-        println!("{} {} {} {}", definition.pinyin, definition.definition, definition.characters, definition.substring_num);
-    }
     let mut filtered_definitions: Vec<Definition> = Vec::new();
-    let mut sentence_index = 0;
     let mut last_found_index = 1024;
     let mut filtered_size = 0;
 
     for definition in &all_definitions {
-        sentence_index = definition.substring_num / SUBSTR_LEN;
-        println!("char: {}, sentence index: {}, last_found: {}, substring_num: {}", definition.characters, sentence_index, last_found_index, definition.substring_num);
         // if the current word is within the length of the last found word, skip it
         // TODO cleanup 
-        if filtered_size > 0 && sentence_index != filtered_definitions[filtered_size-1].substring_num/SUBSTR_LEN && sentence_index <= last_found_index + filtered_definitions[filtered_size-1].num_characters - 1  {
-            println!("Skipping {} , {} < {} ({})", definition.characters, sentence_index, last_found_index + filtered_definitions[filtered_size-1].num_characters-1, filtered_definitions[filtered_size-1].characters);
+        if filtered_size > 0 && definition.sentence_index != filtered_definitions[filtered_size-1].sentence_index && definition.sentence_index <= last_found_index + filtered_definitions[filtered_size-1].length - 1  {
             continue;
         }
-        if sentence_index != last_found_index {
+        if definition.sentence_index != last_found_index {
             filtered_definitions.push(definition.clone());
-            println!("Adding {} to filtered definitions", definition.characters);
             filtered_size += 1;
-            last_found_index = sentence_index;
+            last_found_index = definition.sentence_index;
         } else {
-            println!("Replacing {} with {}", filtered_definitions[filtered_size-1].characters, definition.characters);
             filtered_definitions[filtered_size-1] = definition.clone();
-            //print filtered definitions debug
         }
-    }
-    //print filtered definitions debug
-    for definition in &filtered_definitions {
-        println!("{} {} {} {}", definition.pinyin, definition.definition, definition.characters, definition.substring_num);
     }
     filtered_definitions
 }
@@ -197,7 +193,7 @@ fn lookup_sentence(state: tauri::State<DictionaryInstance>, sentence:&str) -> Ve
     let found_words = get_definitions(&state.0, sentence);
     let mut result: Vec<(usize, String, String, String, usize)> = Vec::new();
     for definition in found_words {
-        result.push((definition.substring_num, definition.pinyin, definition.definition, definition.characters, definition.num_characters));
+        result.push((definition.sentence_index, definition.pinyin, definition.definition, definition.characters, definition.length));
     }
     result
 }
