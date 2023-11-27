@@ -1,8 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/tauri"
   import { LogicalSize, appWindow } from "@tauri-apps/api/window";
-  //import { Text } from "./lib/Text.svelte";
+  import Text from "./lib/Text.svelte";
+  import updateSentence from "../src-overlay/lib/Text.svelte";
   type State = "set_overlay" | "select_process" | "run_overlay"
+  type Box = [number[], number[], number[], number[]];
   let state: State = "select_process";
   let windowName:String = "No process selected";
   let windowId: number = 0;
@@ -15,9 +17,9 @@
   let windowRight: number;
   let windowBottom: number;
     
-
   function setOverlay(): void {
     appWindow.setDecorations(true);
+    appWindow.setResizable(true);
     document.body.style.backgroundColor = "rgba(238, 238, 244, 0.4)";
     state = "set_overlay";  
   }
@@ -29,6 +31,7 @@
 
   function confirmOverlay(): void {
     appWindow.setDecorations(false);
+    appWindow.setResizable(false);
     state = "run_overlay";
     document.body.style.backgroundColor = "rgba(238, 238, 244, 0.03)";
     getPosition().then((position) => {
@@ -47,14 +50,21 @@
 
   function selectProcess(): void {
     appWindow.setDecorations(true);
+    appWindow.setResizable(true);
     state = "select_process";
     document.body.style.backgroundColor = "#2f2f2f";
     windowInterval = setInterval(getMouseWindow, 300);
   }
 
   async function takeScreenshot(){
-    let result = await invoke("screenshot", {windowId: windowId, cropWh: overlay_wh, cropXy: overlay_xy});
-    console.log("took screenshitjkjA" + result);
+    let result: any = await invoke("screenshot", {windowId: windowId, cropWh: overlay_wh, cropXy: overlay_xy});
+    result = JSON.parse(result);
+    document.getElementById("overlayText")!.innerHTML = "";
+    for(var i = 0; i<result["texts"].length; i++){
+      let text = result["texts"][i];
+      let box = result["boxes"][i];
+      addText(text, box, i);
+    }
   }
 
   async function getMouseWindow(): Promise<void> {
@@ -81,6 +91,21 @@
       }
     }
   }
+
+  function addText(text:string, box:Box, text_id:number): void {
+    const textComponent = new Text({
+      target: document.getElementById("overlayText")!,
+      props: {
+        text: text,
+        box: box,
+        text_id: text_id
+      }
+    });
+  }
+  
+  function clearText(){
+    document.getElementById("overlayText")!.innerHTML = "";
+  }
   selectProcess();
 </script>
 
@@ -97,10 +122,14 @@
       <button type="button" class="confirm-btn" on:click={confirmOverlay}>Confirm</button>
     </div>
   {:else if state === "run_overlay"}
-    <h2><span id="title">Overlay is running!</span></h2>
-    <div class = "row">
-      <button type="button" class="confirm-btn" on:click={setOverlay}>Close</button>
-      <button type="button" class="confirm-btn" on:click={takeScreenshot}>Take Screenshot</button>
+    <div class="left-overlay-buttons">
+      <button type="button" class="confirm-btn overlay-btn" on:click={setOverlay}>Close</button>
+    </div>
+    <div class="overlay-buttons">
+      <button type="button" class="confirm-btn overlay-btn" on:click={clearText}>Clear</button>
+      <button type="button" class="confirm-btn overlay-btn" on:click={takeScreenshot}>Take Screenshot</button>
+    </div>
+    <div id="overlayText">
     </div>
   {/if}
 </main>
@@ -121,10 +150,25 @@
   .confirm-btn{
     background-color: #0f0f0f;
   }
+  .overlay-btn{
+    opacity:0.1;
+  }
+  .overlay-btn:hover{
+    opacity:1;
+  }
+  .overlay-buttons{
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .left-overlay-buttons{
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
   @media only screen and (max-width: 526px) { 
   #title { 
     display: none; 
   } 
-  
 }
 </style>

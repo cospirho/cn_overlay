@@ -4,15 +4,17 @@
     import { LogicalSize, WebviewWindow } from '@tauri-apps/api/window'
     //todo https://tauri.app/v1/api/js/window/ communicate with other window
     // we'll need to do it eventually even if we decide to display the text in the same window
-    let text = '找到了!白露大人!_在这!';
-    let textArr = text.split('');
+    export let text: string = '为什么每次都能';
+    export let text_id: number = 1;
+    let textArr: string[];
     // these will be fetched from the backend
-    let box = [[360, 196], [772, 196], [772, 248], [360, 248]];
-    let height = box[2][1] - box[0][1];
-    let width = box[1][0] - box[0][0];
-    let numchars = text.length;
-    //TODO set the font size to be the same as the width of the character
-    let charwidth = width / numchars;
+    export let box: [number[], number[], number[], number[]] = [[360, 196], [772, 196], [772, 248], [360, 248]];
+
+    let height: number;
+    let width: number;
+    let padding: number;
+    let numchars: number;
+    let charWidth: number;
 
     let definitions: Definition[] = [];
     let pinyin:string = '';
@@ -35,7 +37,7 @@
           let startIndex = definition_data[0];
           let definitionLen = definition_data[4];
           for(var j = startIndex; j<startIndex+definitionLen; j++){
-            let char = document.getElementById("char" + j);
+            let char = document.getElementById(text_id + "_" + j);
             char?.classList.add("highlight");
           }
           break;
@@ -47,9 +49,12 @@
       //remove highlight from all characters
       // could maybe just remove from ix-4 to ix + 4, with bounds checks
       for(var i = 0; i<=textArr.length; i++){
-        let char = document.getElementById("char" + i);
+        let char = document.getElementById(text_id + "_" + i);
         char?.classList.remove("highlight");
       }
+      character = "";
+      pinyin = "";
+      definition = "";
     }
 
     async function get_definitions(): Promise<void> {
@@ -69,26 +74,38 @@
       definition = lookupResults[1];
     }
 
-    get_definitions();
+    export function updateSentence(sentence: string, box: number[][]): void {
+      text = sentence;
+      textArr = text.split('');
+      numchars = text.length;
+      box = box;
+      height = box[2][1] - box[0][1];
+      width = box[1][0] - box[0][0];
+      padding = height / 5;
+      charWidth = width / numchars;
+      get_definitions();
+    }
+  updateSentence(text, box);
   </script>
   
   <div id="definition" class="resultCard" role="img">
-    <span class="character">Character: {character}</span>
-    <span class="pinyin">Pinyin: {pinyin}</span>
-    <span class="definition">Definition: {definition}</span>
+    <!--<span class="character">Character: {character}</span>-->
+    <span class="pinyin">{pinyin}</span>
+    <span class="definition">{definition}</span>
   </div>
-  <div class="sentence" on:mouseup={handleMouseup} role="presentation">
+  <div class="sentence" style="top: {box[0][1] + padding}px; left: {box[0][0]}px;" on:mouseup={handleMouseup} role="presentation">
     {#each textArr as char, ix}
-      <!--<span id="char{ix}" class="text" style="left: {ix * charwidth}px">{char}</span>-->
-      <span id="char{ix}" class="text" on:mouseenter={() => hoverChar(ix)} on:mouseleave={() => unhoverChar(ix)} role="img">{char}</span>
+      <span id="{text_id}_{ix}" class="text" style="font-size:{charWidth}px" on:mouseenter={() => hoverChar(ix)} on:mouseleave={() => unhoverChar(ix)} role="img">{char}</span>
     {/each}
   </div>
 <style>
   .definition{
     display:block;
+    background-color: black;
   }
   .pinyin{
     display:block;
+    background-color: black;
   }
   .resultCard{
     position:inline-block;
@@ -97,10 +114,10 @@
   }
   .sentence{
     display:block;
+    position: absolute;
   }
   .text{
-    /* font size is set to charwidth */
-    font-size: 31px;
+    background-color: black;
   }
     /* svelte compiler removes unused css, doesn't remove global rules */
   :global(.highlight){
