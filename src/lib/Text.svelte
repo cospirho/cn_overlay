@@ -1,13 +1,13 @@
 <script lang="ts">
     type Definition = [number, string, string, string, number]
     import { invoke } from "@tauri-apps/api/tauri"
-    import { LogicalSize, WebviewWindow } from '@tauri-apps/api/window'
-    //todo https://tauri.app/v1/api/js/window/ communicate with other window
-    // we'll need to do it eventually even if we decide to display the text in the same window
+    // import { LogicalSize, WebviewWindow } from '@tauri-apps/api/window'
+    // todo https://tauri.app/v1/api/js/window/ communicate with other window
+
+    // these will be fetched from the backend
     export let text: string = '为什么每次都能';
     export let text_id: number = 1;
     let textArr: string[];
-    // these will be fetched from the backend
     export let box: [number[], number[], number[], number[]] = [[360, 196], [772, 196], [772, 248], [360, 248]];
 
     let height: number;

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/tauri"
   import { LogicalSize, appWindow } from "@tauri-apps/api/window";
-  import Text from "./lib/Text.svelte";
-  import updateSentence from "../src-overlay/lib/Text.svelte";
+  import Text from "./Text.svelte";
   type State = "set_overlay" | "select_process" | "run_overlay"
   type Box = [number[], number[], number[], number[]];
   let state: State = "select_process";
@@ -35,13 +34,9 @@
     state = "run_overlay";
     document.body.style.backgroundColor = "rgba(238, 238, 244, 0.03)";
     getPosition().then((position) => {
-      console.log(position);
       overlay_xy = [position.x - windowLeft, position.y - windowTop];
-      console.log(overlay_xy);
     });
-    console.log(overlay_xy);
     appWindow.innerSize().then((size) => {
-      console.log(size);
       let width = size.width;
       let height = size.height;
       overlay_wh = [width, height];
@@ -70,12 +65,10 @@
   async function getMouseWindow(): Promise<void> {
     let result: [number, String, number, number, number, number] = await invoke("get_window");
     [windowId, windowName, windowLeft, windowTop, windowRight, windowBottom] = result;
-    console.log(result);
     if(windowName === ""){
       windowName = "No title - " + windowId.toString();
     }
     if(!document.hasFocus()){
-      console.log("lost focus");
       document.getElementById("lostfocus")!.classList.remove("invisible");
     }else{
       document.getElementById("lostfocus")!.classList.add("invisible");
