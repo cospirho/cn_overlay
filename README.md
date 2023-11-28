@@ -1,7 +1,9 @@
-# Tauri + Svelte + Typescript
+# CN_Overlay
+This is a prototype implementation of an overlay that allows hovering over on-screen simplified Chinese characters to show their definition/pronounciation, or to easily copy the text. It was mostly designed as a learning aid for use with visual novels.  
+You can highlight individual characters to look them up, in case they constitute a larger word.  
+It only works on Windows.  
+# Demo
+![Alt Text](demo.gif)
 
-This template should help get you started developing with Tauri, Svelte and TypeScript in Vite.
 
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+Full video:  http://www.youtube.com/watch?v=ysYjwLEV95Q
