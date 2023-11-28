@@ -3,7 +3,8 @@ This is a prototype implementation of an overlay that allows hovering over on-sc
 You can highlight individual characters to look them up, in case they constitute a larger word.  
 It only works on Windows.  
 # Usage
-Run start.bat, that should start the ocr server and the overlay.
+Make sure you have python installed, and it's in your path (entering 'python' in the terminal runs python).
+Run start.bat, that should start/install the ocr server and the overlay.
 
 # Demo
 ![Alt Text](demo.gif)
